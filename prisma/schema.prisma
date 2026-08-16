@@ -11,3 +11,23 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Word {
+  id Int @id @default(autoincrement())
+  wordLabel String
+  wordMeaning String
+  wordInUse String
+  url String
+  revision Revision?
+}
+
+model Revision {
+  id Int @id @default(autoincrement())
+  word Word @relation(fields: [wordId], references: [id])
+  wordId Int @unique
+  easeFactor Float
+  intervalDays Int
+  repetitions Int
+  nextReviewDate DateTime
+  lastReviewDate DateTime
+}
