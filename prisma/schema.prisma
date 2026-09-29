@@ -17,7 +17,7 @@ model Word {
   wordLabel String
   wordMeaning String
   wordInUse String
-  url String
+  url String?
   tags String[] @default([])
   revision Revision?
 }

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Word" ALTER COLUMN "url" DROP NOT NULL;
