@@ -2,7 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-import { createWordSchema, type CreateWordInput } from "./schema";
+import {
+  createWordSchema,
+  type CreateWordInput,
+  deleteWordSchema,
+  type DeleteWordInput,
+} from "./schema";
 
 /** Valeurs SM-2 par défaut pour la toute première révision d'un mot. */
 const INITIAL_REVISION = {
@@ -24,6 +29,12 @@ export type CreateWordResult =
       errors: Partial<Record<keyof CreateWordInput, string[]>>;
     };
 
+export type DeleteWordResult =
+  | { success: true }
+  | {
+      success: false;
+      errors: Partial<Record<keyof DeleteWordInput, string[]>>;
+    };
 /**
  * Crée un mot et initialise sa révision SRS (le mot est donc immédiatement
  * disponible pour une première session de révision).
@@ -59,4 +70,34 @@ export async function createWord(
   });
 
   return { success: true, word };
+}
+
+/**
+ * Supprime un mot (et sa révision associée, via `onDelete: Cascade` côté
+ * Prisma) à partir de son identifiant.
+ */
+export async function deleteWord(
+  input: DeleteWordInput,
+): Promise<DeleteWordResult> {
+  const parsed = deleteWordSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { success: false, errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { id } = parsed.data;
+
+  try {
+    await prisma.word.delete({ where: { id } });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return { success: false, errors: { id: ["Ce mot n'existe plus."] } };
+    }
+    throw error;
+  }
+
+  return { success: true };
 }

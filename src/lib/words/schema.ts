@@ -27,3 +27,9 @@ export const createWordSchema = z.object({
 });
 
 export type CreateWordInput = z.infer<typeof createWordSchema>;
+
+export const deleteWordSchema = z.object({
+  id: z.number().int().positive("L'identifiant est obligatoire."),
+});
+
+export type DeleteWordInput = z.infer<typeof deleteWordSchema>;

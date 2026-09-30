@@ -24,7 +24,7 @@ model Word {
 
 model Revision {
   id Int @id @default(autoincrement())
-  word Word @relation(fields: [wordId], references: [id])
+  word Word @relation(fields: [wordId], references: [id], onDelete: Cascade)
   wordId Int @unique
   easeFactor Float
   intervalDays Int
