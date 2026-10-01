@@ -35,6 +35,11 @@ export type DeleteWordResult =
       success: false;
       errors: Partial<Record<keyof DeleteWordInput, string[]>>;
     };
+
+export type ListWordsResult =
+  | { success: true; words: WordWithRevision[] }
+  | { success: false; error: string };
+
 /**
  * Crée un mot et initialise sa révision SRS (le mot est donc immédiatement
  * disponible pour une première session de révision).
@@ -100,4 +105,23 @@ export async function deleteWord(
   }
 
   return { success: true };
+}
+
+/**
+ * Liste tous les mots avec leur révision, du plus récent au plus ancien.
+ */
+export async function listWords(): Promise<ListWordsResult> {
+  try {
+    const words = await prisma.word.findMany({
+      include: { revision: true },
+      orderBy: { id: "desc" },
+    });
+    return { success: true, words };
+  } catch (error) {
+    console.error("listWords:", error);
+    return {
+      success: false,
+      error: "Impossible de récupérer la liste des mots.",
+    };
+  }
 }
