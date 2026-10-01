@@ -7,6 +7,8 @@ import {
   type CreateWordInput,
   deleteWordSchema,
   type DeleteWordInput,
+  modifyWordSchema,
+  type ModifyWordInput,
 } from "./schema";
 
 /** Valeurs SM-2 par défaut pour la toute première révision d'un mot. */
@@ -39,6 +41,14 @@ export type DeleteWordResult =
 export type ListWordsResult =
   | { success: true; words: WordWithRevision[] }
   | { success: false; error: string };
+
+
+export type ModifyWordResult =
+  | { success: true; word: WordWithRevision }
+  | {
+      success: false;
+      errors: Partial<Record<keyof ModifyWordInput, string[]>>;
+    };
 
 /**
  * Crée un mot et initialise sa révision SRS (le mot est donc immédiatement
@@ -123,5 +133,38 @@ export async function listWords(): Promise<ListWordsResult> {
       success: false,
       error: "Impossible de récupérer la liste des mots.",
     };
+  }
+}
+
+/**
+ * Modifie un mot existant. Seuls les champs fournis sont mis à jour ; la
+ * révision SRS n'est pas touchée.
+ */
+export async function modifyWord(
+  input: ModifyWordInput,
+): Promise<ModifyWordResult> {
+  const parsed = modifyWordSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { success: false, errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { id, ...data } = parsed.data;
+
+  try {
+    const word = await prisma.word.update({
+      where: { id },
+      data,
+      include: { revision: true },
+    });
+    return { success: true, word };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return { success: false, errors: { id: ["Ce mot n'existe plus."] } };
+    }
+    throw error;
   }
 }
